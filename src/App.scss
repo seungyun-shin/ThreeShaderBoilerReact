@@ -1,0 +1,18 @@
+*{
+  margin: 0;
+  padding: 0;
+  // padding: 1px;
+}
+body{
+  overscroll-behavior: none;
+}
+#container{
+  width: 100vw;
+  height: 100vh;
+}
+canvas{
+  width: 100vw;
+  height: 100vh;
+  display: block;
+  background-color:black;
+}
