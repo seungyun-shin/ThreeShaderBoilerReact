@@ -1,139 +1,139 @@
-import React, { useRef, useMemo, useCallback} from 'react'
+import React, { useRef, useMemo, useCallback, Component, useEffect } from 'react'
 import * as THREE from "three";
-import { BufferAttribute } from 'three';
-
 // reset Styles
 import "../App.scss"
 
+import fragment from '../shaders/fragment.glsl'
+import vertex from '../shaders/vertex.glsl'
+
+import fragmentJS from '../shaders/fragment.js'
+import vertexJS from '../shaders/vertex.js'
+
 //R3F
-import { Canvas, useFrame, extend  } from '@react-three/fiber'
+// import { Canvas, useFrame, extend  } from '@react-three/fiber'
 
 // Deai - R3F
-import { softShadows, MeshWobbleMaterial, MeshDistortMaterial, OrbitControls, shaderMaterial, perspectiveCamera } from "@react-three/drei";
+// import { softShadows, MeshWobbleMaterial, MeshDistortMaterial, OrbitControls, shaderMaterial, perspectiveCamera } from "@react-three/drei";
 
 // shader texture
 import mask from '../imgs/particle.jpeg'
 import t1 from '../imgs/colorcaspi.jpg'
 import t2 from '../imgs/back10.jpg'
 
-const MeshModel = ({}) => {
+let OrbitControls = require("three-orbit-controls")(THREE);
+
+const MeshModel = () => {
  
-    //shader
-    const fragmentShader = `
-    varying vec2 vCoordinates;
-    void main() {
-        gl_FragColor = vec4(vCoordinates.x/512., vCoordinates.y/512., 0., 1.);
-    }
-    `
-    const vertexShader = `
-    varying vec2 vUv;
-    varying vec2 vCoordinates;
-    attribute vec3 aCoordinates;
-    void main() {
-        vUv = uv;
+    useEffect(() => {
 
-        vec4 mvPosition = modelViewMatrix * vec4( position, 1.);
-        gl_PointSize = 2000. * (1. / - mvPosition.z);
-        gl_Position = projectionMatrix * mvPosition;
+      class Sketch{
+        constructor(){
 
-        vCoordinates = aCoordinates.xy;
-    }
-    `
+          this.renderer = new THREE.WebGLRenderer( { antialias: true } );
+          this.renderer.setSize( window.innerWidth, window.innerHeight );
+          document.getElementById('container').appendChild( this.renderer.domElement );
 
-    const textures = [
-        new THREE.TextureLoader().load(t1),
-        new THREE.TextureLoader().load(t2),
-    ]
+          this.camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 3000 );
+          this.camera.position.z = 1000;
+          this.scene = new THREE.Scene();
 
-    const uniforms = {
-        progress: {type: "f", value: 0},
-        t1: {type:"t", value: textures[0]},
-        t2: {type:"t", value: textures[1]},
-        // mask: {type:"t", value: this.mask},
-        // mousePressed: {type:"f", value: 0},
-        // mouse: {type: "v2", value: null},
-        // transition: {type: "f", value: null},
-        // move: {type:"f", value: 0},
-        // time: {type:"f", value: 0},
-    }
-
-    const number = 512*512;
-    const initialPositions = []
-    const initialCoordinates = []
-    let index=0;
-    for(let i=0; i <512; i++){
-        let posX = i - 256;
-        for(let j =0; j<512; j++){
-            // positions.setXYZ(index, i*2 ,j*2 , 0)
-            // this.coordinates.setXYZ(index, i, j, 0)
-            // this.offset.setX(index, rand(-1000, 1000))
-            // this.speeds.setX(index, rand(0.4, 1))
-            // this.direction.setX(index, Math.random() > 0.5 ? 1:-1)
-            // this.press.setX(index, rand(0.4, 1))
-            initialPositions.push(posX*2)
-            initialPositions.push((j-256)*2)
-            initialPositions.push(0)
-
-            initialCoordinates.push(i)
-            initialCoordinates.push(j)
-            initialCoordinates.push(0)
-
-            index++;
+          this.textures = [
+            new THREE.TextureLoader().load(t1),
+            new THREE.TextureLoader().load(t2),
+            // new THREE.TextureLoader().load(t3),
+            // new THREE.TextureLoader().load(t4),
+        ]
+        this.mask = new THREE.TextureLoader().load(mask);
+        this.time = 0;
+        this.move = 0;
+        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+          
+          this.addMesh();
+          this.render();
         }
-    }
-    
-    const positions = useMemo(()=>{
-        return new Float32Array(initialPositions);
-    }, [initialPositions]);
 
-    const coordinates = useMemo(()=>{
-        return new Float32Array(initialCoordinates);
-    }, [initialCoordinates]);
+        addMesh(){
 
-    const mesh = useRef();
-      //useFrame allows us to re-render/update rotation on each frame
-    // useFrame(() => (
-    //     mesh.current.rotation.x = mesh.current.rotation.y += 0.01
-    // ));
-    
+          this.material = new THREE.ShaderMaterial({
+            fragmentShader:fragmentJS,
+            vertexShader:vertexJS,
+            uniforms:{
+              progress: {type:"f", value: 0},
+              t1: {type:"t", value: this.textures[0]},
+              t2: {type:"t", value: this.textures[1]},
+              // t3: {type:"t", value: this.textures[2]},
+              // t4: {type:"t", value: this.textures[3]},
+              // mask: {type:"t", value: this.mask},
+              // mousePressed: {type:"f", value: 0},
+              // mouse: {type: "v2", value: null},
+              // transition: {type: "f", value: null},
+              // move: {type:"f", value: 0},
+              // time: {type:"f", value: 0},
+            },
+            side: THREE.DoubleSide,
+            transparent: true,
+            depthTest: false,
+            depthWrite: false,
+          })
+
+          let number = 512*512;
+          this.geometry = new THREE.BufferGeometry(); 
+          this.positions = new THREE.BufferAttribute(new Float32Array(number*3), 3);
+          this.coordinates = new THREE.BufferAttribute(new Float32Array(number*3), 3);
+          // this.speeds = new THREE.BufferAttribute(new Float32Array(number), 1);
+          // this.offset = new THREE.BufferAttribute(new Float32Array(number), 1);
+          // this.direction = new THREE.BufferAttribute(new Float32Array(number), 1);
+          // this.press = new THREE.BufferAttribute(new Float32Array(number), 1);
+
+          let index = 0;
+          for (let i = 0; i < 512; i++){
+            let posX = i - 256;
+            for(let j = 0; j < 512; j++){
+                this.positions.setXYZ(index, posX*2,(j-256)*2,0)
+                this.coordinates.setXYZ(index, i, j, 0)
+                // this.offset.setX(index, rand(-1000, 1000))
+                // this.speeds.setX(index, rand(0.4, 1))
+                // this.direction.setX(index, Math.random() > 0.5 ? 1:-1)
+                // this.press.setX(index, rand(0.4, 1))
+                index++;
+            }
+          } 
+
+          this.geometry.setAttribute("position", this.positions)
+          this.geometry.setAttribute("aCoordinates", this.coordinates)
+          // this.geometry.setAttribute("aOffset", this.offset)
+          // this.geometry.setAttribute("aSpeed", this.speeds)
+          // this.geometry.setAttribute("aPress", this.press)
+          // this.geometry.setAttribute("aDirection", this.direction)
+
+          this.mesh = new THREE.Points( this.geometry, this.material );
+          this.scene.add( this.mesh );
+        }
+
+        render(){
+          this.time++;
+          // this.mesh.rotation.x += 0.01;
+          // this.mesh.rotation.y += 0.02;
+          this.renderer.render( this.scene, this.camera );
+          window.requestAnimationFrame(this.render.bind(this));
+        }
+      }
+      new Sketch();
+
+    }, []);
+
     return (
-        // <perspectiveCamera fov={70} position={[0,0,500]} aspect={window.innerWidth/window.innerHeight} near={0.1} far={3000} >
-        <points
-            ref={mesh}
-        >
-            {/* <planeBufferGeometry attach='geometry' args={[1000,1000,10,10]} /> */}
-            <bufferGeometry attach='geometry'>
-                <bufferAttribute
-                    attachObject={['attributes', 'position']}
-                    array={positions}
-                    count={positions.length / 3}
-                    itemSize={3}
-                />
-                <bufferAttribute
-                    attachObject={['attributes', 'aCoordinates']}
-                    array={coordinates}
-                    count={coordinates.length / 3}
-                    itemSize={3}
-                />
-            </bufferGeometry>
-
-            <shaderMaterial attach="material" uniforms={uniforms} fragmentShader={fragmentShader} vertexShader={vertexShader} side={THREE.DoubleSide} />
- 
-            {/* <shaderMaterial attach="material" color="hotpink" time={1} /> */}
-            {/* <meshNormalMaterial side={THREE.DoubleSide}/> */}
-        </points>
-        // </perspectiveCamera>
-    )
+        <>
+          <div id="container"/>
+        </>
+    );
 }
 
 
 function HomeMainModel() {
     return (
         <>
-            <Canvas camera={{ fov: 70, position: [0, 0, 1000], near:0.1, far:3000}}>
-                <MeshModel/>
-                <OrbitControls />
-            </Canvas>
+            <MeshModel/>
         </>
     )
 }

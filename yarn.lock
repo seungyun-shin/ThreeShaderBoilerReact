@@ -11822,6 +11822,11 @@
   "resolved" "https://registry.npmjs.org/three-mesh-bvh/-/three-mesh-bvh-0.4.0.tgz"
   "version" "0.4.0"
 
+"three-orbit-controls@^82.1.0":
+  "integrity" "sha1-EafzPQog7OyY8Jizd4D2U3N0+rQ="
+  "resolved" "https://registry.npmjs.org/three-orbit-controls/-/three-orbit-controls-82.1.0.tgz"
+  "version" "82.1.0"
+
 "three-stdlib@^2.2.0":
   "integrity" "sha512-2ywaUEuqxP5UR25pevVUWtNgVJ0t/IPFHZi5k8JLfzBG7MAZ1uRVu0zy6M7lZx38zSDqVxZTYGUCX1A4eFmm5A=="
   "resolved" "https://registry.npmjs.org/three-stdlib/-/three-stdlib-2.2.0.tgz"
